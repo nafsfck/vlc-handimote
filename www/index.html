@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>VLC Handimote</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+		<style>
+			.icon-pill {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 0.8em;
+			min-width: 2.5em;
+			}
+			
+			.icon-pill i {
+			/*font-size: 1.75em;*/
+			font-size: xx-large;
+			transition: font-size 0.2s;
+			}
+			
+			.pill-timeline {
+			padding-top: 1em;
+			padding-bottom: 1em;
+			}
+			
+			.time-display {
+			max-width: 10ch;
+			/*font-size: 0.9em;*/
+			font-size: medium;
+			}
+			
+			@media (max-width: 576px) {
+			.icon-pill {
+			padding: 0.66em;
+			}
+			.icon-pill i {
+			/*font-size: 1.5em;*/
+			font-size: x-large;
+			}
+			.time-display {
+			/*font-size: 0.75em;*/
+			font-size: small;
+			}
+			}
+			.scrolling-container {
+			overflow: hidden;
+			white-space: nowrap;
+			width: 100%;
+			position: relative;
+			}
+			
+			.scrolling-text {
+			display: inline-block;
+			white-space: nowrap;
+			animation: scroll-left 16s linear infinite;
+			padding-left: 110%;
+			margin-top: 1em;
+			}
+			
+			@keyframes scroll-left {
+			from {
+			transform: translateX(0%);
+			}
+			to {
+			transform: translateX(-101%);
+			}
+			}
+		</style>
+	</head>
+	<body style="line-height: 1.5;">
+		<div class="container-fluid">
+			<!-- floating status alert box -->
+			<div id="statusAlert" class="alert alert-dismissible fade" style="position: fixed; top: 1em; left: 50%; transform: translateX(-50%); z-index: 1050; display: none; min-width: 50%; max-width: 99%;">
+				<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+				<strong id="alertHeading"></strong> <span id="alertMessage"></span>
+			</div>
+			<!-- main header -->
+			<div class="row text-center py-4 text-bg-primary">
+				<div class="col">
+					<h1><i class="bi bi-cone-striped"></i>  VLC Handimote  <i class="bi bi-phone"></i></h1>
+					<p class="small">A free and open-source app to control your VLC Player.</p>
+				</div>
+			</div>
+			<!-- PC/VLC settings (default collapsed)-->
+			<div class="row py-3" id="vlcWebPlayerConfig">
+				<div class="col">
+					<div id="configAccordion" class="shadow">
+						<div class="card">
+							<div class="card-header text-center">
+								<a class="btn" data-bs-toggle="collapse" href="#configCard">
+									<h2>Config</h2>
+								</a>
+							</div>
+							<div id="configCard" class="collapse" data-bs-parent="#configAccordion">
+								<div class="card-body">
+									<!-- day/night mode selectors
+										<div class="d-flex justify-content-end gap-3 py-3" id="themeBar">
+										<div class="col bg-secondary">
+										<h3>Theme </h3>
+										</div>
+										<div class="col">
+										<button onclick="setTheme('light')" class="btn btn-secondary">
+										<i class="bi bi-sun"></i>
+										</button>
+										<button onclick="setTheme('dark')" class="btn btn-secondary">
+										<i class="bi bi-moon"></i>
+										</button>
+										<button onclick="setTheme('dynamic')" class="btn btn-secondary">
+										<i class="bi bi-circle-half"></i>
+										</button>
+										</div>
+									</div>-->
+									<!-- Theme selector bar -->
+									<div class="border rounded px-3 py-2 d-flex align-items-center my-3 gap-3" id="themeBar">
+										<div class="flex-grow-1 fw-bold">Theme</div>
+										<div><button onclick="setTheme('light')" class="btn btn-secondary">
+										<i class="bi bi-sun"></i></div>
+										</button>
+										<div><button onclick="setTheme('dark')" class="btn btn-secondary">
+										<i class="bi bi-moon"></i></div>
+										</button>
+										<div><button onclick="setTheme('dynamic')" class="btn btn-secondary">
+										<i class="bi bi-circle-half"></i></div>
+										</button>
+									</div>
+									<form onsubmit="saveConfig(); return false;">
+										<div class="mb-3">
+											<label for="ip" class="form-label">PC's IP Address</label>
+											<input type="text" class="form-control" id="ip" placeholder="192.168.x.x">
+										</div>
+										<div class="mb-3">
+											<label for="password" class="form-label">VLC Interface Password</label>
+											<input autocomplete="current-password" type="password" class="form-control" id="password">
+										</div>
+										<div class="text-center">
+											<button type="submit" class="btn btn-primary w-100">Save & Test Connection</button>
+										</div>
+									</form>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Playlist (default collapsed)-->
+			<div class="row py-3" id="vlcWebPlayerPlaylistCard">
+				<div class="col">
+					<div id="playlistAccordion" class="shadow">
+						<div class="card">
+							<div class="card-header text-center">
+								<a class="btn" data-bs-toggle="collapse" href="#playlistCard">
+									<h2>Playlist</h2>
+								</a>
+							</div>
+							<div id="playlistCard" class="collapse" data-bs-parent="#playlistAccordion">
+								<div class="card-body">
+									<div class="container-fluid">
+										<div class="row">
+											<div class="col">
+												<ul id="playlistContainer" class="list-group">
+													<li class="list-group-item text-muted ">Empty playlist</li>
+												</ul>
+											</div>
+										</div>
+										<div class="row justify-content-around text-center">
+											<div class="col">
+												<button class="btn btn-primary my-3" onclick="openMediaBrowser()"><i class="bi bi-folder2-open"></i>  Browse for media</button>
+											</div>
+											<div class="col">
+												<button id="btnClearPlaylist" class="btn btn-danger my-3"><i class="bi bi-trash"></i>  Clear playlist</button>
+											</div>
+										</div>
+										<!-- playlist location -->
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Player controls (default shown) -->
+			<div class="row py-3" id="vlcPlayerControls">
+				<div class="col">
+					<div id="controlsAccordion" class="shadow">
+						<div class="card">
+							<div class="card-header text-center">
+								<a class="btn"> <!-- data-bs-toggle="collapse"  href="#controlsCard" -->
+									<h2>Controls</h2>
+								</a>
+							</div>
+							<div id="controlsCard" class="show" data-bs-parent="#controlsAccordion">
+								<div class="card-body text-center">
+									<!-- controls in container -->
+									<div class="container-fluid bg-secondary rounded text-body">
+										<div class="row">
+											<!-- Now Playing -->
+											<div class="col-12 scrolling-container rounded-top py-2 px-3">
+												<span class="scrolling-text" id="nowPlayingTitle">Now Playing: -</span>
+											</div>
+											<!-- Timeline -->
+											<div class="col-12 d-flex align-items-center pill-timeline px-2 gap-2">
+												<div class="flex-shrink-0 time-display text-end">
+													<span id="currentTime">--:--:--</span>
+												</div>
+												<div class="flex-grow-1">
+													<input id="timeSlider" type="range" class="form-range w-100" style="padding-top: 0.5em;"/>
+												</div>
+												<div class="flex-shrink-0 time-display text-start">
+													<span id="totalTime">--:--:--</span>
+												</div>
+											</div>
+											<!-- Playback Controls -->
+											<div class="col-12 d-flex justify-content-around gap-2 py-2 ps-1 pe-1">
+												<div class="icon-pill" onclick="sendVLCCommand('pl_previous')"><i class="bi bi-skip-backward"></i></div>
+												<div class="icon-pill" onclick="sendVLCCommand('seek&val=-10')"><sub class="font-monospace mt-2 me-1">10</sub><i class="bi bi-rewind"></i></div>
+												<div class="icon-pill" onclick="sendVLCCommand('pl_stop')"><i class="bi bi-stop"></i></div>
+												<div class="icon-pill" onclick="sendVLCCommand('pl_pause');">
+													<i class="bi bi-play text-top"></i><i class="bi bi-slash" style="margin-left: -0.5em; margin-right: -0.5em;"></i><i class="bi bi-pause text-bottom"></i>
+												</div>
+												<div class="icon-pill" onclick="sendVLCCommand('seek&val=%2B10')"><i class="bi bi-fast-forward"></i><sub class="font-monospace mt-2 ms-1">10</sub></div>
+												<div class="icon-pill" onclick="sendVLCCommand('pl_next')"><i class="bi bi-skip-forward"></i></div>
+											</div>
+											<!-- Subs, Volume, Fullscreen -->
+											<div class="col-12 d-flex align-items-center gap-2 py-2 rounded-bottom px-2 ps-1 pe-1">
+												<div class="d-flex align-items-center justify-content-around flex-grow-1 gap-2">
+													<div class="icon-pill" onclick="cycleSubtitleTrack(); getStatus();"><i class="bi bi-badge-cc"></i></div>
+													<div class="icon-pill" onclick="sendVLCCommand('volume&val=0'); getStatus();"><i class="bi bi-volume-mute"></i></div>
+													<input id="volumeSlider" type="range" min="0" max="100" step="1" class="form-range w-100" />
+													<div class="icon-pill" onclick="sendVLCCommand('volume&val=256'); getStatus();"><i class="bi bi-volume-up"></i></div><div class="icon-pill" onclick="sendVLCCommand('fullscreen')"><i class="bi bi-fullscreen"></i></div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Media Browser Modal -->
+			<div class="modal fade" id="mediaBrowserModal" tabindex="-1" aria-labelledby="mediaBrowserLabel" aria-hidden="true">
+				<div class="modal-dialog modal-lg modal-dialog-scrollable">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="mediaBrowserLabel">Media Browser</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<nav aria-label="breadcrumb">
+								<ol class="breadcrumb" id="mediaBrowserBreadcrumb">
+									<!-- Dynamic breadcrumb will be here -->
+								</ol>
+							</nav>
+							<ul class="list-group" id="mediaBrowserList" style="user-select: none;">
+								<!-- Folders and files will be dynamically loaded here -->
+							</ul>
+						</div>
+						<div class="modal-footer">
+							<button type="button" id="btnEnqueue" class="btn btn-primary" disabled><i class="bi bi-file-plus"></i>  Add to Playlist</button>
+							<button type="button" id="btnOpen" class="btn btn-success invisible" disabled>Play Selected</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script type="text/javascript">
+			//globals
+			let magicNumber = 5.12; //for volume normalization //was 5.12 -- not needed for % (%25)?
+			let currentPath = 'file:///';  // root folder path for browsing VLC file URIs
+			let mediaItems = [];           // current folder contents
+			//let selectedItems = new Set(); // track selected file URIs
+			let selectedItems = [];
+			// Global variables to hold subtitle tracks and current index
+			let subtitleTracks = [];
+			let currentSubtitleIndex = -1;
+			let lastMediaId = null; // to be used for last filename
+			// Consolidated theme setting function
+			function applyStoredTheme() {
+				const savedTheme = localStorage.getItem('theme') || 'light';
+				if (savedTheme === 'dynamic') {
+					const now = new Date();
+					const dynamicTheme = (now.getHours() >= 7 && now.getHours() < 19) ? 'light' : 'dark';
+					document.documentElement.setAttribute('data-bs-theme', dynamicTheme);
+				}
+				else {
+					document.documentElement.setAttribute('data-bs-theme', savedTheme);
+				}
+			}
+			// Manual theme switching (light, dark, or dynamic)
+			function setTheme(theme) {
+				if (theme === 'dynamic') {
+					const now = new Date();
+					const dynamicTheme = (now.getHours() >= 7 && now.getHours() < 19) ? 'light' : 'dark';
+					document.documentElement.setAttribute('data-bs-theme', dynamicTheme);
+					localStorage.setItem('theme', 'dynamic');
+					} else {
+					document.documentElement.setAttribute('data-bs-theme', theme);
+					localStorage.setItem('theme', theme);
+				}
+				showAlert('success', 'Set theme.');
+			}
+			// Save configuration (IP and password)
+			function saveConfig() {
+				const ip = document.getElementById('ip').value;
+				const password = document.getElementById('password').value;
+				if (!ip || !password) {
+					showAlert('error', 'IP and password are required.');
+					return;
+				}
+				else {
+					showAlert('success', 'IP and password saved; try building a playlist.');
+				}
+				localStorage.setItem('vlc_ip', ip);
+				localStorage.setItem('vlc_password', password);
+				bootstrap.Collapse.getInstance(document.getElementById('configCard'))?.hide();
+				getStatus();
+			}
+			// Time formatting function for time display
+			function formatTime(seconds) {
+				if (isNaN(seconds)) return '00:00:00';
+				const hrs = Math.floor(seconds / 3600);
+				const mins = Math.floor((seconds % 3600) / 60);
+				const secs = Math.floor(seconds % 60);
+				return [hrs, mins, secs]
+				.map(unit => String(unit).padStart(2, '0'))
+				.join(':');
+			}
+			// Filtering for media browser
+			function isSupportedMediaFile(filename) {
+				const supportedExtensions = [
+				'.mp4', '.mkv', '.avi', '.mov', '.webm',
+				'.mp3', '.flac', '.aac', '.wav', '.ogg',
+				'.m4a', '.wmv', '.mpeg', '.mpg', '.3gp', '.ts'
+				];
+				const junkFiles = [
+				'.ds_store', 'thumbs.db', 'desktop.ini'
+				];
+				const lower = filename.toLowerCase();
+				// Exclude junk files exactly matching
+				if (junkFiles.includes(lower)) {
+					return false;
+				}
+				// Require file to have an extension (check last dot is not first char and present)
+				if (lower.lastIndexOf('.') <= 0) {
+					return false; // no extension or hidden file without extension
+				}
+				// Check if file ends with supported extension
+				return supportedExtensions.some(ext => lower.endsWith(ext));
+			}
+			//parse subtitle tracks
+			async function parseSubtitleTracks() {
+				const ip = localStorage.getItem('vlc_ip');
+				const password = localStorage.getItem('vlc_password');
+				if (!ip || !password) return;
+				const base64 = btoa(":" + password);
+				try {
+					const res = await fetch(`http://${ip}:8080/requests/status.json`, {
+						headers: { 'Authorization': 'Basic ' + base64 }
+					});
+					if (!res.ok) throw new Error(`HTTP ${res.status}`);
+					const data = await res.json();
+					// Clear existing tracks
+					subtitleTracks = [];
+					currentSubtitleIndex = -1;
+					// Defensive: check if structure exists
+					if (data.information && data.information.category) {
+						const categories = data.information.category;
+						// Filter subtitle streams
+						subtitleTracks = Object.entries(categories)
+						.filter(([key, val]) => val.Type === "Subtitle")
+						.map(([key, val]) => {
+							// Extract stream number from "Stream N"
+							const streamNum = parseInt(key.replace("Stream ", ""), 10);
+							return {
+								id: streamNum,
+								name: `${val.Language || "Unknown"} (${val.Codec || "Subtitle"})`
+							};
+						})
+						.sort((a, b) => a.id - b.id); // Sort subs by ID
+						// TODO: Find current subtitle index from other data if available
+						// VLC's status.json doesn't seem to expose current subtitle stream directly
+						// So currentSubtitleIndex may need to be set or updated elsewhere
+					}
+					} catch (error) {
+					showAlert('error', 'Error parsing subtitle tracks.', error);
+					subtitleTracks = [];
+					currentSubtitleIndex = -1;
+				}
+			}
+			// Cycle to next subtitle track, or turn off if at end
+			async function cycleSubtitleTrack() {
+				if (subtitleTracks.length === 0) {
+					showAlert('error', 'No subtitles available.');
+					return;
+				}
+				// If we've cycled past the last track, disable subtitles, reset index for next press
+				if (currentSubtitleIndex >= subtitleTracks.length) {
+					await sendVLCCommand("subtitle_track&val=-1"); //-1 disables
+					showAlert('success', 'Subtitles disabled.');
+					currentSubtitleIndex = 0;
+					return;
+				}
+				else {
+					if (currentSubtitleIndex == -1){
+						currentSubtitleIndex++;
+					}
+					const nextTrackId = subtitleTracks[currentSubtitleIndex].id;
+					await sendVLCCommand(`subtitle_track&val=${nextTrackId}`);
+					showAlert('success', `Subtitle: ${subtitleTracks[currentSubtitleIndex].name}`);
+					// Advance array index
+					currentSubtitleIndex++;
+				}
+			}
+			// Unified function to get status/variables from VLC
+			async function getStatus() {
+				const ip = localStorage.getItem('vlc_ip');
+				const password = localStorage.getItem('vlc_password');
+				if (!ip || !password) return;
+				const base64 = btoa(":" + password);
+				try {
+					const response = await fetch(`http://${ip}:8080/requests/status.json`, {
+						headers: {
+							'Authorization': 'Basic ' + base64
+						}
+					});
+					if (!response.ok) throw new Error("HTTP error " + response.status);
+					const data = await response.json();
+					const currentTime = data.time || 0; // Current playback time in seconds
+					const totalTime = data.length || 0; // Total media length in seconds
+					const volume = data.volume || 0; // Volume level
+					// Update current time and total time display
+					document.getElementById('currentTime').textContent = formatTime(currentTime);
+					document.getElementById('totalTime').textContent = formatTime(totalTime);
+					// Update time slider (sync with current playback time)
+					const timeSlider = document.getElementById('timeSlider');
+					timeSlider.max = totalTime;  // Set max value to total duration
+					timeSlider.value = currentTime;  // Set current value
+					// Update volume slider (scale from 0-100)
+					const volumeSlider = document.getElementById('volumeSlider');
+					volumeSlider.value = volume / magicNumber;  // Convert VLC volume back to 0-100 scale
+					//fetches media title (filename if unknown/no entry) -- scroll if too long
+					const title = data.information?.category?.meta?.title || data.information?.category?.meta?.filename || 'N/A';
+					document.getElementById('nowPlayingTitle').textContent = `Now Playing: ${title}`;
+					const currentId = title;
+					if (currentId && currentId !== 'N/A' && currentId !== lastMediaId) {
+						lastMediaId = currentId;
+						await parseSubtitleTracks();
+						showAlert('success', 'Parsed subtitles for media.');
+					}
+					loadPlaylist();
+					} catch (error) {
+					console.error(error);
+				}
+			}
+			// Send command to VLC
+			async function sendVLCCommand(command) {
+				const ip = localStorage.getItem('vlc_ip');
+				const password = localStorage.getItem('vlc_password');
+				if (!ip || !password) {
+					showAlert('error', 'Missing IP or password.');
+					return;
+				}
+				const base64 = btoa(":" + password);
+				try {
+					const response = await fetch(`http://${ip}:8080/requests/status.json?command=${command}`, {
+						headers: {
+							'Authorization': 'Basic ' + base64
+						}
+					});
+					if (!response.ok) throw new Error(`HTTP ${response.status}`);
+					
+					const volumeRegex = /^volume&val=(\d+)$/;
+					
+					switch (true) {
+						case command === 'pl_previous':
+						showAlert('success', 'Previous media.');
+						break;
+						case command === 'seek&val=-10':
+						showAlert('success', '<< 10 secs.');
+						break;
+						case command === 'pl_stop':
+						showAlert('success', 'Playback stopped.');
+						break;
+						case command === 'pl_pause':
+						showAlert('success', 'Pausing/resuming media.');
+						break;
+						case command === 'seek&val=%2B10':
+						showAlert('success', '>> 10 secs.');
+						break;
+						case command === 'pl_next':
+						showAlert('success', 'Next media.');
+						break;
+						case volumeRegex.test(command): {
+							const match = command.match(volumeRegex);
+							const volumeVal = parseInt(match[1], 10);
+							const volumePercent = Math.round(volumeVal / 5.12)*2; // VLC volume scale (0-512)
+							showAlert('success', `Volume: ${volumePercent}%`);
+							break;
+						}
+						default:
+						showAlert('success', `Command '${command}' sent.`);
+						break;
+					}
+					
+					} catch (error) {
+					showAlert('error', 'Command failed.');
+					console.error(error);
+				}
+			}
+			// Load the playlist
+			async function loadPlaylist() {
+				const ip = localStorage.getItem('vlc_ip');
+				const password = localStorage.getItem('vlc_password');
+				if (!ip || !password) return;
+				const base64 = btoa(":" + password);
+				try {
+					const response = await fetch(`http://${ip}:8080/requests/playlist.json`, {
+						headers: {
+							'Authorization': 'Basic ' + base64
+						}
+					});
+					if (!response.ok) throw new Error("HTTP error " + response.status);
+					const data = await response.json();
+					renderPlaylist(data);
+					} catch (error) {
+					showAlert('error', 'Playlist empty or loading error: ', error);
+				}
+			}
+			// walk through and render playlist
+			function renderPlaylist(data) {
+				const container = document.getElementById('playlistContainer');
+				container.innerHTML = '';
+				let itemCount = 0;
+				function walk(node) {
+					if (node.children && node.children.length > 0) {
+						node.children.forEach(walk);
+						} else if (!node.children) {
+						itemCount++;
+						const li = document.createElement('li');
+						li.className = 'list-group-item list-group-item-action';
+						li.textContent = node.name || "Unnamed item";
+						li.style.cursor = "pointer";
+						// Highlight the currently playing item
+						if (node.current) {
+							li.classList.add('active');
+						}
+						li.onclick = () => sendVLCCommand(`pl_play&id=${node.id}`);
+						container.appendChild(li);
+					}
+				}
+				if (data && data.children) {
+					data.children.forEach(walk);
+				}
+				if (itemCount === 0) {
+					const li = document.createElement('li');
+					li.className = 'list-group-item text-muted';
+					li.textContent = 'Empty playlist';
+					container.appendChild(li);
+				}
+			}
+			// Fetch folder contents from VLC web interface
+			async function loadFolder(path) {
+				currentPath = path;
+				clearSelection();
+				updateBreadcrumb();
+				try {
+					// Build VLC browse URL using URI param, not dir
+					let url = `http://${document.getElementById('ip').value}:8080/requests/browse.json?uri=${encodeURIComponent(path)}`;
+					const response = await fetch(url, {
+						headers: {
+							'Authorization': 'Basic ' + btoa(':' + document.getElementById('password').value)
+						}
+					});
+					if (!response.ok) throw new Error('Failed to load folder');
+					const data = await response.json();
+					mediaItems = data.element || []; // VLC returns { element: [...] }
+					renderMediaList();
+					} catch (err) {
+					showAlert('danger', 'Error loading folder: ' + err.message);
+				}
+				localStorage.setItem('last_browsed_path', currentPath);
+			}
+			// Render breadcrumb navigation
+			function updateBreadcrumb() {
+				const breadcrumb = document.getElementById('mediaBrowserBreadcrumb');
+				breadcrumb.innerHTML = '';
+				// Remove "file:///" prefix for breadcrumbs and split by /
+				let displayPath = currentPath.replace(/^file:\/\/\/*/, '');
+				const parts = displayPath.split(/[/\\]+/).filter(Boolean);
+				let pathAccumulator = 'file:///';
+				// Root link
+				const rootCrumb = document.createElement('li');
+				rootCrumb.className = 'breadcrumb-item';
+				rootCrumb.innerHTML = `<a href="#" onclick="navigateBreadcrumb('file:///');return false;"> <i class="bi bi-pc-display"></i> </a>`;
+				breadcrumb.appendChild(rootCrumb);
+				parts.forEach((part, i) => {
+					pathAccumulator += encodeURIComponent(part) + '/';
+					const isLast = i === parts.length - 1;
+					const crumb = document.createElement('li');
+					crumb.className = 'breadcrumb-item' + (isLast ? ' active' : '');
+					if (isLast) {
+						crumb.textContent = decodeURIComponent(part);
+						crumb.setAttribute('aria-current', 'page');
+						} else {
+						crumb.innerHTML = `<a href="#" onclick="navigateBreadcrumb('${pathAccumulator}');return false;">${decodeURIComponent(part)}</a>`;
+					}
+					breadcrumb.appendChild(crumb);
+				});
+			}
+			// Breadcrumb navigation handler
+			function navigateBreadcrumb(path) {
+				loadFolder(path);
+			}
+			// Render media list with folders and files
+			function renderMediaList() {
+				const list = document.getElementById('mediaBrowserList');
+				list.innerHTML = '';
+				// Add parent folder entry if not root
+				if (currentPath !== 'file:///') {
+					let trimmed = currentPath.replace(/\/$/, ''); // remove trailing slash
+					let parentPath = trimmed.substring(0, trimmed.lastIndexOf('/')) || 'file:///';
+					if (!parentPath.endsWith('/')) parentPath += '/';
+					const parentItem = document.createElement('li');
+					parentItem.className = 'list-group-item list-group-item-action d-flex align-items-center';
+					parentItem.innerHTML = `<i class="bi bi-folder-up me-2"></i> .. (Parent folder)`;
+					parentItem.style.cursor = 'pointer';
+					parentItem.onclick = () => loadFolder(parentPath);
+					list.appendChild(parentItem);
+				}
+				// Sort folders first, then files, both alphabetically (case-insensitive)
+				mediaItems.sort((a, b) => {
+					const aIsDir = (a.type === 'dir' || a.type === 'directory');
+					const bIsDir = (b.type === 'dir' || b.type === 'directory');
+					if (aIsDir && !bIsDir) return -1;
+					if (!aIsDir && bIsDir) return 1;
+					// Same type: sort alphabetically ignoring case
+					return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+				});
+				// Eliminate the ".." within the folder lists
+				mediaItems = mediaItems.filter(item => item.name !== '..');
+				mediaItems.forEach(item => {
+					if (item.type === 'dir' || item.type === 'directory') {
+						// Skip junk folders explicitly
+						const folderName = item.name.toLowerCase();
+						if (folderName === '$recycle.bin' || folderName === 'system volume information') {
+							return; // skip these junk folders
+						}
+						// Continue to render folder normally
+						} else {
+						// It's a file, check junk files & extensions
+						if (!isSupportedMediaFile(item.name)) return;
+						// Continue to render file normally
+					}
+					// All rendering code must be inside here:
+					const li = document.createElement('li');
+					li.className = 'list-group-item list-group-item-action d-flex align-items-center';
+					li.style.cursor = 'pointer';
+					const icon = document.createElement('i');
+					icon.className = (item.type === 'dir' || item.type === 'directory')
+					? 'bi bi-folder-fill me-2'
+					: 'bi bi-file-earmark me-2';
+					li.appendChild(icon);
+					const text = document.createElement('span');
+					text.textContent = item.name;
+					li.appendChild(text);
+					let itemURI = item.path;
+					if (!itemURI.startsWith('file:///')) {
+						if (/^[a-zA-Z]:\\/.test(itemURI)) {
+							itemURI = 'file:///' + itemURI.replace(/\\/g, '/');
+							} else if (!itemURI.startsWith('file://')) {
+							itemURI = 'file:///' + itemURI;
+						}
+					}
+					if (item.type === 'dir' || item.type === 'directory') {
+						li.onclick = () => loadFolder(itemURI.endsWith('/') ? itemURI : itemURI + '/');
+						} else {
+						li.onclick = event => {
+							toggleSelection(itemURI, li);
+						};
+					}
+					list.appendChild(li);
+				}); // end forEach
+			}
+			// Toggle playlist browser selection styling and state
+			/*function toggleSelection(uri, liElement) {
+				//if (selectedItems.has(uri)) {
+				if (selectedItems.includes(uri)) {
+				//selectedItems.delete(uri);
+				selectedItems = selectedItems.filter(item => item !== uri);
+				liElement.classList.remove('active');
+				} else {
+				//selectedItems.add(uri);
+				selectedItems.push(uri);
+				liElement.classList.add('active');
+				}
+				/// Enable buttons if something selected
+				const hasSelection = selectedItems.size > 0;
+				document.getElementById('btnEnqueue').disabled = !hasSelection;
+				document.getElementById('btnOpen').disabled = !hasSelection;/
+				//document.getElementById('btnEnqueue').disabled = selectedItems.size === 0;
+				document.getElementById('btnEnqueue').disabled = selectedItems.length === 0;
+				// Show 'Play Selected' only if **exactly one file** is selected
+				const playBtn = document.getElementById('btnOpen');
+				//if (selectedItems.size === 1) {
+				if (selectedItems.length === 1) {
+				playBtn.disabled = false;
+				playBtn.classList.remove('invisible');
+				} else {
+				playBtn.disabled = true;
+				playBtn.classList.add('invisible');
+				}
+			}*/
+			//new toggle using array and splice
+			function toggleSelection(uri, liElement) {
+				const index = selectedItems.indexOf(uri);
+				
+				if (index !== -1) {
+					// Remove the item if it's already selected
+					selectedItems.splice(index, 1);
+					liElement.classList.remove('active');
+					} else {
+					// Add the item if it's not already selected
+					selectedItems.push(uri);
+					liElement.classList.add('active');
+				}
+				
+				// Enable buttons only if something is selected
+				document.getElementById('btnEnqueue').disabled = selectedItems.length === 0;
+				
+				// Show 'Play Selected' only if exactly one file is selected
+				const playBtn = document.getElementById('btnOpen');
+				if (selectedItems.length === 1) {
+					playBtn.disabled = false;
+					playBtn.classList.remove('invisible');
+					} else {
+					playBtn.disabled = true;
+					playBtn.classList.add('invisible');
+				}
+			}
+			
+			// Utility: Clear selections and disable playlist buttons
+			function clearSelection() {
+				//selectedItems.clear();
+				selectedItems = [];
+				document.getElementById('btnEnqueue').disabled = true;
+				document.getElementById('btnOpen').disabled = true;
+				document.getElementById('btnOpen').classList.add('invisible');
+			}
+			// 'Browse Media' button
+			function openMediaBrowser() {
+				const mediaBrowserModal = new bootstrap.Modal(document.getElementById('mediaBrowserModal'));
+				mediaBrowserModal.show();
+				// Load root folder initially *** todo: save user's last or favorite location
+				const last = localStorage.getItem('last_browsed_path') || 'file:///';
+				loadFolder(last);
+			}
+			// Show status alerts (success or error)
+			function showAlert(type, message) {
+				const alert = document.getElementById('statusAlert');
+				const heading = document.getElementById('alertHeading');
+				const body = document.getElementById('alertMessage');
+				alert.className = 'alert alert-dismissible fade';
+				alert.classList.add(type === 'success' ? 'alert-success' : 'alert-danger');
+				heading.textContent = type === 'success' ? 'Success!' : 'Error!';
+				body.textContent = message;
+				alert.classList.add('show');
+				alert.style.display = 'block';
+				setTimeout(() => {
+					alert.classList.remove('show');
+					setTimeout(() => {
+						alert.style.display = 'none';
+					}, 150);
+				}, 1500);
+			}
+			applyStoredTheme(); // Apply saved theme immediately
+			//fetch saved values for ip/password
+			document.getElementById('ip').value = localStorage.getItem('vlc_ip') || '';
+			document.getElementById('password').value = localStorage.getItem('vlc_password') || '';
+			// Time slider: Using 'input' event listener
+			document.getElementById('timeSlider').addEventListener('input', function () {
+				const seekTo = this.value;
+				sendVLCCommand(`seek&val=${seekTo}`);
+			});
+			// volume slider: Using 'input' event listener
+			document.getElementById('volumeSlider').addEventListener('input', function () {
+				const volume = this.value * magicNumber;
+				sendVLCCommand(`volume&val=${Math.round(volume)}`);
+			});
+			// Refresh playlist when accordion is expanded listener
+			document.getElementById('playlistCard').addEventListener('shown.bs.collapse', function () {
+				loadPlaylist();
+			});
+			// Clear playlist button listener
+			document.getElementById('btnClearPlaylist').addEventListener('click', async () => {
+				try {
+					const ip = document.getElementById('ip').value;
+					const password = document.getElementById('password').value;
+					const url = `http://${ip}:8080/requests/status.xml?command=pl_empty`;
+					const response = await fetch(url, {
+						headers: {
+							'Authorization': 'Basic ' + btoa(':' + password)
+						}
+					});
+					if (!response.ok) throw new Error('Unable to clear playlist.');
+					showAlert('success', 'Playlist cleared!');
+					} catch (err) {
+					showAlert('danger', '' + err.message);
+				}
+			});
+			//playlist modal button listeners
+			document.getElementById('btnEnqueue').addEventListener('click', () => {
+				selectedItems.forEach(uri => {
+					sendVLCCommand(`in_enqueue&input=${encodeURIComponent(uri)}`);
+				});
+				showAlert('success', 'Added to playlist');
+				// Close modal after enqueue, (start playing first item in playlist?)
+				const modalEl = document.getElementById('mediaBrowserModal');
+				const modal = bootstrap.Modal.getInstance(modalEl);
+				modal.hide();
+				bootstrap.Collapse.getInstance(document.getElementById('playlistCard'))?.hide();
+				sendVLCCommand('pl_pause');
+			});
+			document.getElementById('btnOpen').addEventListener('click', () => {
+				//if (selectedItems.size === 0) return;
+				if (selectedItems.length === 0) return;
+				const first = [...selectedItems][0];
+				sendVLCCommand(`in_play&input=${encodeURIComponent(first)}`);
+				showAlert('success', 'Playing media');
+				// Close modal after play
+				const modalEl = document.getElementById('mediaBrowserModal');
+				const modal = bootstrap.Modal.getInstance(modalEl);
+				modal.hide();
+			});
+			// Auto-refresh VLC status every second (if ip and pass)			
+			if (localStorage.getItem('vlc_ip') && localStorage.getItem('vlc_password')) {
+				getStatus();
+				setInterval(getStatus, 1000);
+			}
+		</script>
+	</body>
+</html>
