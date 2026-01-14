@@ -2,4 +2,8 @@
   "appId": "com.nafsfck.vlchandimote",
   "appName": "VLC Handimote",
   "webDir": "www"
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["192.168.*.*", "localhost"] 
+  }
 }
