@@ -31,7 +31,6 @@ jobs:
 
       - name: Build APK
         run: |
-          npm install @capacitor/cli @capacitor/core @capacitor/android
           npx cap sync android
           chmod +x android/gradlew
           cd android && ./gradlew assembleDebug
