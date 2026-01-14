@@ -1,2 +1,2 @@
 # vlc-handimote
-Small, free, open source app to control VLC from your Android phone!
+A free and open-source app to control your VLC Player.
