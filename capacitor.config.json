@@ -1,13 +1,15 @@
 {
   "appId": "com.nafsfck.vlchandimote",
-  "appName": "VLC Handimote",
+  "appName": "vlc-handimote",
   "webDir": "www",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
   "server": {
     "androidScheme": "http",
-	"cleartext": true,
-    "allowNavigation": ["*"] 
-  },
-  "android": {
-    "allowMixedContent": true
+    "cleartext": true,
+    "allowNavigation": ["*"]
   }
 }
