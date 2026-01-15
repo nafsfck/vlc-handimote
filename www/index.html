@@ -252,10 +252,9 @@
 		</div>
 		<script type="text/javascript">
 			//globals
-			let magicNumber = 5.12; //for volume normalization //was 5.12 -- not needed for % (%25)?
+			let magicNumber = 5.12; //for volume normalization -- not needed for % (%25)?
 			let currentPath = 'file:///';  // root folder path for browsing VLC file URIs
 			let mediaItems = [];           // current folder contents
-			//let selectedItems = new Set(); // track selected file URIs
 			let selectedItems = [];
 			// Global variables to hold subtitle tracks and current index
 			let subtitleTracks = [];
@@ -668,35 +667,6 @@
 					list.appendChild(li);
 				}); // end forEach
 			}
-			// Toggle playlist browser selection styling and state
-			/*function toggleSelection(uri, liElement) {
-				//if (selectedItems.has(uri)) {
-				if (selectedItems.includes(uri)) {
-				//selectedItems.delete(uri);
-				selectedItems = selectedItems.filter(item => item !== uri);
-				liElement.classList.remove('active');
-				} else {
-				//selectedItems.add(uri);
-				selectedItems.push(uri);
-				liElement.classList.add('active');
-				}
-				/// Enable buttons if something selected
-				const hasSelection = selectedItems.size > 0;
-				document.getElementById('btnEnqueue').disabled = !hasSelection;
-				document.getElementById('btnOpen').disabled = !hasSelection;/
-				//document.getElementById('btnEnqueue').disabled = selectedItems.size === 0;
-				document.getElementById('btnEnqueue').disabled = selectedItems.length === 0;
-				// Show 'Play Selected' only if **exactly one file** is selected
-				const playBtn = document.getElementById('btnOpen');
-				//if (selectedItems.size === 1) {
-				if (selectedItems.length === 1) {
-				playBtn.disabled = false;
-				playBtn.classList.remove('invisible');
-				} else {
-				playBtn.disabled = true;
-				playBtn.classList.add('invisible');
-				}
-			}*/
 			//new toggle using array and splice
 			function toggleSelection(uri, liElement) {
 				const index = selectedItems.indexOf(uri);
