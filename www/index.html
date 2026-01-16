@@ -8,6 +8,11 @@
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 		<style>
+			.breadcrumb-icon {
+			font-size: 1.5em;
+			vertical-align: middle;
+			}
+			
 			.icon-pill {
 			display: flex;
 			align-items: center;
@@ -546,6 +551,13 @@
 			}
 			// Fetch folder contents from VLC web interface
 			async function loadFolder(path) {
+				/*currentPath = path;
+				clearSelection();
+				updateBreadcrumb();*/
+				const ip = localStorage.getItem('vlc_ip'); // Use storage, not the input field
+				const password = localStorage.getItem('vlc_password');
+				if (!ip) return; 
+
 				currentPath = path;
 				clearSelection();
 				updateBreadcrumb();
@@ -577,7 +589,7 @@
 				// Root link
 				const rootCrumb = document.createElement('li');
 				rootCrumb.className = 'breadcrumb-item';
-				rootCrumb.innerHTML = `<a href="#" onclick="navigateBreadcrumb('file:///');return false;"> <i class="bi bi-pc-display" style="font-size: 1.5em;"></i> </a>`;
+				rootCrumb.innerHTML = `<a href="#" onclick="navigateBreadcrumb('file:///');return false;"> <i class="bi bi-pc-display breadcrumb-icon"></i> </a>`;
 				breadcrumb.appendChild(rootCrumb);
 				parts.forEach((part, i) => {
 					pathAccumulator += encodeURIComponent(part) + '/';
@@ -752,7 +764,7 @@
 				try {
 					const ip = document.getElementById('ip').value;
 					const password = document.getElementById('password').value;
-					const url = `http://${ip}:8080/requests/status.xml?command=pl_empty`;
+					const url = `http://${ip}:8080/requests/status.json?command=pl_empty`; //was status.xml
 					const response = await fetch(url, {
 						headers: {
 							'Authorization': 'Basic ' + btoa(':' + password)
